@@ -1,0 +1,52 @@
+[
+  {
+    "Id": 1,
+    "connectionId": 1,
+    "sql": "SELECT * FROM users WHERE status = 'active' ORDER BY created_at DESC LIMIT 10",
+    "executedAt": "2024-01-20T10:30:00Z",
+    "executionTime": 245,
+    "rowCount": 10,
+    "isFavorite": true,
+    "status": "completed"
+  },
+  {
+    "Id": 2,
+    "connectionId": 1,
+    "sql": "SELECT p.name, p.price, c.name as category FROM products p JOIN categories c ON p.category_id = c.id WHERE p.stock_quantity > 0",
+    "executedAt": "2024-01-20T09:15:00Z",
+    "executionTime": 156,
+    "rowCount": 25,
+    "isFavorite": false,
+    "status": "completed"
+  },
+  {
+    "Id": 3,
+    "connectionId": 2,
+    "sql": "SELECT event_type, COUNT(*) as count FROM events WHERE timestamp >= NOW() - INTERVAL '1 day' GROUP BY event_type ORDER BY count DESC",
+    "executedAt": "2024-01-19T16:45:00Z",
+    "executionTime": 892,
+    "rowCount": 8,
+    "isFavorite": true,
+    "status": "completed"
+  },
+  {
+    "Id": 4,
+    "connectionId": 1,
+    "sql": "UPDATE products SET stock_quantity = stock_quantity - 1 WHERE id = 123",
+    "executedAt": "2024-01-19T14:20:00Z",
+    "executionTime": 87,
+    "rowCount": 1,
+    "isFavorite": false,
+    "status": "completed"
+  },
+  {
+    "Id": 5,
+    "connectionId": 3,
+    "sql": "SELECT * FROM user_preferences WHERE user_id IN (SELECT id FROM users WHERE last_login >= date('now', '-30 days'))",
+    "executedAt": "2024-01-18T12:15:00Z",
+    "executionTime": 324,
+    "rowCount": 42,
+    "isFavorite": false,
+    "status": "completed"
+  }
+]

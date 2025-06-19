@@ -1,0 +1,54 @@
+[
+  {
+    "Id": 1,
+    "name": "Production MySQL",
+    "type": "mysql",
+    "host": "prod-db.company.com",
+    "port": 3306,
+    "database": "ecommerce_prod",
+    "username": "app_user",
+    "passwordHash": "encrypted_password_hash_1",
+    "isActive": false,
+    "lastConnected": "2024-01-20T10:30:00Z",
+    "createdAt": "2024-01-15T09:00:00Z"
+  },
+  {
+    "Id": 2,
+    "name": "Development PostgreSQL",
+    "type": "postgresql",
+    "host": "localhost",
+    "port": 5432,
+    "database": "dev_analytics",
+    "username": "developer",
+    "passwordHash": "encrypted_password_hash_2",
+    "isActive": false,
+    "lastConnected": "2024-01-19T16:45:00Z",
+    "createdAt": "2024-01-10T14:20:00Z"
+  },
+  {
+    "Id": 3,
+    "name": "Local SQLite",
+    "type": "sqlite",
+    "host": "local",
+    "port": 0,
+    "database": "/data/local.db",
+    "username": "",
+    "passwordHash": "",
+    "isActive": false,
+    "lastConnected": "2024-01-18T12:15:00Z",
+    "createdAt": "2024-01-12T11:30:00Z"
+  },
+  {
+    "Id": 4,
+    "name": "Staging MySQL",
+    "type": "mysql",
+    "host": "staging-db.company.com",
+    "port": 3306,
+    "database": "ecommerce_staging",
+    "username": "staging_user",
+    "passwordHash": "encrypted_password_hash_4",
+    "isActive": false,
+    "lastConnected": "2024-01-17T08:20:00Z",
+    "createdAt": "2024-01-08T16:10:00Z"
+  }
+]

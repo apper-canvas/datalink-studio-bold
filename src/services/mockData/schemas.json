@@ -1,0 +1,42 @@
+[
+  {
+    "connectionId": 1,
+    "database": "ecommerce_prod",
+    "tables": [
+      {
+        "name": "users",
+        "type": "table",
+        "rowCount": 15420,
+        "columns": [
+          {"name": "id", "type": "int", "nullable": false, "key": "PRI"},
+          {"name": "username", "type": "varchar(50)", "nullable": false},
+          {"name": "email", "type": "varchar(100)", "nullable": false},
+          {"name": "created_at", "type": "timestamp", "nullable": false}
+        ]
+      },
+      {
+        "name": "products",
+        "type": "table", 
+        "rowCount": 2850,
+        "columns": [
+          {"name": "id", "type": "int", "nullable": false, "key": "PRI"},
+          {"name": "name", "type": "varchar(200)", "nullable": false},
+          {"name": "price", "type": "decimal(10,2)", "nullable": false},
+          {"name": "stock_quantity", "type": "int", "nullable": false}
+        ]
+      }
+    ],
+    "views": [
+      {
+        "name": "user_order_summary",
+        "type": "view"
+      }
+    ],
+    "procedures": [
+      {
+        "name": "GetUserOrders",
+        "type": "procedure"
+      }
+    ]
+  }
+]
