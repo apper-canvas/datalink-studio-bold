@@ -1,25 +1,12 @@
-const STORAGE_KEY = 'datalink_queries';
+import { toast } from 'react-toastify';
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Load queries from localStorage
-const loadQueries = () => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (error) {
-    console.error('Error loading queries:', error);
-    return [];
-  }
-};
-
-// Save queries to localStorage
-const saveQueries = (queries) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(queries));
-  } catch (error) {
-    console.error('Error saving queries:', error);
-  }
+// Initialize ApperClient
+const getApperClient = () => {
+  const { ApperClient } = window.ApperSDK;
+  return new ApperClient({
+    apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+    apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+  });
 };
 
 // Generate mock result data based on SQL query
@@ -73,81 +60,204 @@ const generateMockResults = (sql) => {
 
 const queryService = {
   async getAll() {
-    await delay(200);
-    const queries = loadQueries();
-    return [...queries];
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "connection_id" } },
+          { field: { Name: "sql" } },
+          { field: { Name: "executed_at" } },
+          { field: { Name: "execution_time" } },
+          { field: { Name: "row_count" } },
+          { field: { Name: "is_favorite" } },
+          { field: { Name: "status" } }
+        ],
+        orderBy: [
+          { fieldName: "executed_at", sorttype: "DESC" }
+        ],
+        pagingInfo: {
+          limit: 100,
+          offset: 0
+        }
+      };
+
+      const response = await apperClient.fetchRecords('query', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching queries:', error);
+      toast.error('Failed to load queries');
+      return [];
+    }
   },
 
   async getById(id) {
-    await delay(200);
-    const queries = loadQueries();
-    const query = queries.find(q => q.Id === parseInt(id, 10));
-    return query ? { ...query } : null;
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "connection_id" } },
+          { field: { Name: "sql" } },
+          { field: { Name: "executed_at" } },
+          { field: { Name: "execution_time" } },
+          { field: { Name: "row_count" } },
+          { field: { Name: "is_favorite" } },
+          { field: { Name: "status" } }
+        ]
+      };
+
+      const response = await apperClient.getRecordById('query', parseInt(id, 10), params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching query:', error);
+      return null;
+    }
   },
 
   async create(queryData) {
-    await delay(300);
-    const queries = loadQueries();
-    const maxId = queries.length > 0 ? Math.max(...queries.map(q => q.Id)) : 0;
-    
-    const newQuery = {
-      Id: maxId + 1,
-      connectionId: queryData.connectionId,
-      sql: queryData.sql,
-      executedAt: new Date().toISOString(),
-      executionTime: queryData.executionTime || 0,
-      rowCount: queryData.rowCount || 0,
-      isFavorite: false,
-      status: queryData.status || 'completed'
-    };
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        records: [
+          {
+            Name: `Query ${Date.now()}`,
+            connection_id: queryData.connectionId,
+            sql: queryData.sql,
+            executed_at: new Date().toISOString(),
+            execution_time: queryData.executionTime || 0,
+            row_count: queryData.rowCount || 0,
+            is_favorite: false,
+            status: queryData.status || 'completed'
+          }
+        ]
+      };
 
-    queries.unshift(newQuery); // Add to beginning for recent queries
-    
-    // Keep only last 100 queries
-    if (queries.length > 100) {
-      queries.splice(100);
+      const response = await apperClient.createRecord('query', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        // Don't show toast for query history creation failures
+        return null;
+      }
+
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          return null;
+        }
+        
+        const successfulRecord = response.results.find(result => result.success);
+        return successfulRecord ? successfulRecord.data : null;
+      }
+    } catch (error) {
+      console.error('Error creating query:', error);
+      return null;
     }
-    
-    saveQueries(queries);
-    return { ...newQuery };
   },
 
   async update(id, queryData) {
-    await delay(300);
-    const queries = loadQueries();
-    const index = queries.findIndex(q => q.Id === parseInt(id, 10));
-    
-    if (index === -1) {
-      throw new Error('Query not found');
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        records: [
+          {
+            Id: parseInt(id, 10),
+            is_favorite: queryData.is_favorite,
+            status: queryData.status
+          }
+        ]
+      };
+
+      const response = await apperClient.updateRecord('query', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to update ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+          
+          throw new Error('Failed to update query');
+        }
+        
+        const successfulRecord = response.results.find(result => result.success);
+        return successfulRecord ? successfulRecord.data : null;
+      }
+    } catch (error) {
+      console.error('Error updating query:', error);
+      throw error;
     }
-
-    const updatedQuery = {
-      ...queries[index],
-      ...queryData,
-      updatedAt: new Date().toISOString()
-    };
-
-    queries[index] = updatedQuery;
-    saveQueries(queries);
-    return { ...updatedQuery };
   },
 
   async delete(id) {
-    await delay(200);
-    const queries = loadQueries();
-    const filteredQueries = queries.filter(q => q.Id !== parseInt(id, 10));
-    
-    if (filteredQueries.length === queries.length) {
-      throw new Error('Query not found');
-    }
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        RecordIds: [parseInt(id, 10)]
+      };
 
-    saveQueries(filteredQueries);
-    return true;
+      const response = await apperClient.deleteRecord('query', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to delete ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+          
+          throw new Error('Failed to delete query');
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting query:', error);
+      throw error;
+    }
   },
 
   async execute(connectionId, sql) {
     const startTime = Date.now();
-    await delay(Math.random() * 1500 + 500); // 500-2000ms execution time
+    
+    // Simulate execution time
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 1500 + 500));
     
     if (!sql || !sql.trim()) {
       throw new Error('SQL query cannot be empty');
@@ -180,29 +290,92 @@ const queryService = {
   },
 
   async getFavorites() {
-    await delay(200);
-    const queries = loadQueries();
-    return queries.filter(q => q.isFavorite);
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "connection_id" } },
+          { field: { Name: "sql" } },
+          { field: { Name: "executed_at" } },
+          { field: { Name: "execution_time" } },
+          { field: { Name: "row_count" } },
+          { field: { Name: "is_favorite" } },
+          { field: { Name: "status" } }
+        ],
+        where: [
+          { FieldName: "is_favorite", Operator: "EqualTo", Values: ["true"] }
+        ],
+        orderBy: [
+          { fieldName: "executed_at", sorttype: "DESC" }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('query', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching favorite queries:', error);
+      return [];
+    }
   },
 
   async toggleFavorite(id) {
-    await delay(200);
-    const queries = loadQueries();
-    const index = queries.findIndex(q => q.Id === parseInt(id, 10));
-    
-    if (index === -1) {
-      throw new Error('Query not found');
-    }
+    try {
+      const query = await this.getById(id);
+      if (!query) {
+        throw new Error('Query not found');
+      }
 
-    queries[index].isFavorite = !queries[index].isFavorite;
-    saveQueries(queries);
-    return { ...queries[index] };
+      return await this.update(id, {
+        is_favorite: !query.is_favorite
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      throw error;
+    }
   },
 
   async getRecentQueries(limit = 10) {
-    await delay(200);
-    const queries = loadQueries();
-    return queries.slice(0, limit);
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "connection_id" } },
+          { field: { Name: "sql" } },
+          { field: { Name: "executed_at" } },
+          { field: { Name: "execution_time" } },
+          { field: { Name: "row_count" } },
+          { field: { Name: "is_favorite" } },
+          { field: { Name: "status" } }
+        ],
+        orderBy: [
+          { fieldName: "executed_at", sorttype: "DESC" }
+        ],
+        pagingInfo: {
+          limit,
+          offset: 0
+        }
+      };
+
+      const response = await apperClient.fetchRecords('query', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching recent queries:', error);
+      return [];
+    }
   }
 };
 

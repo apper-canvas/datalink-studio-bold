@@ -6,8 +6,8 @@ import Button from '@/components/atoms/Button';
 import { connectionService } from '@/services';
 
 const ConnectionForm = ({ connection, onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
-    name: connection?.name || '',
+const [formData, setFormData] = useState({
+    name: connection?.Name || '',
     type: connection?.type || 'mysql',
     host: connection?.host || '',
     port: connection?.port || '',

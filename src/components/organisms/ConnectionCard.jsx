@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { toast } from 'react-toastify';
-import { formatDistanceToNow } from 'date-fns';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Badge from '@/components/atoms/Badge';
-import Card from '@/components/molecules/Card';
-import { connectionService } from '@/services';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { toast } from "react-toastify";
+import { formatDistanceToNow } from "date-fns";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Badge from "@/components/atoms/Badge";
+import Card from "@/components/molecules/Card";
+import { connectionService } from "@/services";
 
 const ConnectionCard = ({ connection, onEdit, onConnect, onRefresh }) => {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -83,23 +83,23 @@ const ConnectionCard = ({ connection, onEdit, onConnect, onRefresh }) => {
     >
       <Card className="p-6 h-full">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${connection.isActive ? 'bg-success/20' : 'bg-surface-700'}`}>
+<div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${connection.is_active ? 'bg-success/20' : 'bg-surface-700'}`}>
               <ApperIcon 
                 name={getTypeIcon()} 
                 size={20} 
-                className={connection.isActive ? 'text-success' : 'text-slate-400'} 
+                className={connection.is_active ? 'text-success' : 'text-slate-400'} 
               />
             </div>
             <div>
-              <h3 className="font-semibold text-white text-lg">
-                {connection.name}
+<h3 className="font-semibold text-white text-lg">
+                {connection.Name}
               </h3>
-              <div className="flex items-center gap-2 mt-1">
+<div className="flex items-center gap-2 mt-1">
                 <Badge variant={getTypeColor()} size="xs">
                   {connection.type.toUpperCase()}
                 </Badge>
-                {connection.isActive && (
+                {connection.is_active && (
                   <Badge variant="success" size="xs" icon="Zap">
                     Active
                   </Badge>
@@ -107,7 +107,6 @@ const ConnectionCard = ({ connection, onEdit, onConnect, onRefresh }) => {
               </div>
             </div>
           </div>
-
           <div className="flex items-center gap-1">
             <Button
               size="sm"
@@ -142,7 +141,7 @@ const ConnectionCard = ({ connection, onEdit, onConnect, onRefresh }) => {
             <span>Database:</span>
             <span className="text-slate-300 truncate ml-2">{connection.database}</span>
           </div>
-          {connection.username && (
+{connection.username && (
             <div className="flex justify-between text-slate-400">
               <span>User:</span>
               <span className="text-slate-300">{connection.username}</span>
@@ -150,14 +149,14 @@ const ConnectionCard = ({ connection, onEdit, onConnect, onRefresh }) => {
           )}
         </div>
 
-        {connection.lastConnected && (
+        {connection.last_connected && (
           <div className="text-xs text-slate-500 mb-4">
-            Last connected {formatDistanceToNow(new Date(connection.lastConnected))} ago
+            Last connected {formatDistanceToNow(new Date(connection.last_connected))} ago
           </div>
         )}
 
         <div className="flex gap-2 pt-4 border-t border-surface-700">
-          {connection.isActive ? (
+          {connection.is_active ? (
             <Button
               size="sm"
               variant="secondary"

@@ -1,43 +1,17 @@
-import CryptoJS from 'crypto-js';
+import { toast } from 'react-toastify';
 
-const STORAGE_KEY = 'datalink_connections';
 const ACTIVE_CONNECTION_KEY = 'datalink_active_connection';
-const SECRET_KEY = 'datalink_secret_2024';
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Encrypt password
-const encryptPassword = (password) => {
-  return CryptoJS.AES.encrypt(password, SECRET_KEY).toString();
+// Initialize ApperClient
+const getApperClient = () => {
+  const { ApperClient } = window.ApperSDK;
+  return new ApperClient({
+    apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+    apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+  });
 };
 
-// Decrypt password
-const decryptPassword = (encryptedPassword) => {
-  const bytes = CryptoJS.AES.decrypt(encryptedPassword, SECRET_KEY);
-  return bytes.toString(CryptoJS.enc.Utf8);
-};
-
-// Load connections from localStorage
-const loadConnections = () => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (error) {
-    console.error('Error loading connections:', error);
-    return [];
-  }
-};
-
-// Save connections to localStorage
-const saveConnections = (connections) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(connections));
-  } catch (error) {
-    console.error('Error saving connections:', error);
-  }
-};
-
-// Get active connection
+// Get active connection from localStorage
 const getActiveConnection = () => {
   try {
     const stored = localStorage.getItem(ACTIVE_CONNECTION_KEY);
@@ -48,7 +22,7 @@ const getActiveConnection = () => {
   }
 };
 
-// Set active connection
+// Set active connection in localStorage
 const setActiveConnection = (connection) => {
   try {
     localStorage.setItem(ACTIVE_CONNECTION_KEY, JSON.stringify(connection));
@@ -59,92 +33,233 @@ const setActiveConnection = (connection) => {
 
 const connectionService = {
   async getAll() {
-    await delay(200);
-    const connections = loadConnections();
-    return [...connections];
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "type" } },
+          { field: { Name: "host" } },
+          { field: { Name: "port" } },
+          { field: { Name: "database" } },
+          { field: { Name: "username" } },
+          { field: { Name: "password_hash" } },
+          { field: { Name: "is_active" } },
+          { field: { Name: "last_connected" } },
+          { field: { Name: "created_at" } }
+        ],
+        orderBy: [
+          { fieldName: "Name", sorttype: "ASC" }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('connection', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching connections:', error);
+      toast.error('Failed to load connections');
+      return [];
+    }
   },
 
   async getById(id) {
-    await delay(200);
-    const connections = loadConnections();
-    const connection = connections.find(conn => conn.Id === parseInt(id, 10));
-    return connection ? { ...connection } : null;
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "type" } },
+          { field: { Name: "host" } },
+          { field: { Name: "port" } },
+          { field: { Name: "database" } },
+          { field: { Name: "username" } },
+          { field: { Name: "password_hash" } },
+          { field: { Name: "is_active" } },
+          { field: { Name: "last_connected" } },
+          { field: { Name: "created_at" } }
+        ]
+      };
+
+      const response = await apperClient.getRecordById('connection', parseInt(id, 10), params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching connection:', error);
+      return null;
+    }
   },
 
   async create(connectionData) {
-    await delay(300);
-    const connections = loadConnections();
-    const maxId = connections.length > 0 ? Math.max(...connections.map(c => c.Id)) : 0;
-    
-    const newConnection = {
-      Id: maxId + 1,
-      name: connectionData.name,
-      type: connectionData.type,
-      host: connectionData.host,
-      port: connectionData.port || (connectionData.type === 'mysql' ? 3306 : connectionData.type === 'postgresql' ? 5432 : 0),
-      database: connectionData.database,
-      username: connectionData.username,
-      passwordHash: encryptPassword(connectionData.password),
-      isActive: false,
-      lastConnected: null,
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        records: [
+          {
+            Name: connectionData.name,
+            type: connectionData.type,
+            host: connectionData.host,
+            port: connectionData.port || (connectionData.type === 'mysql' ? 3306 : connectionData.type === 'postgresql' ? 5432 : 0),
+            database: connectionData.database,
+            username: connectionData.username,
+            password_hash: connectionData.password,
+            is_active: false,
+            last_connected: null,
+            created_at: new Date().toISOString()
+          }
+        ]
+      };
 
-    connections.push(newConnection);
-    saveConnections(connections);
-    return { ...newConnection };
+      const response = await apperClient.createRecord('connection', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+          
+          throw new Error('Failed to create connection');
+        }
+        
+        const successfulRecord = response.results.find(result => result.success);
+        return successfulRecord ? successfulRecord.data : null;
+      }
+    } catch (error) {
+      console.error('Error creating connection:', error);
+      throw error;
+    }
   },
 
   async update(id, connectionData) {
-    await delay(300);
-    const connections = loadConnections();
-    const index = connections.findIndex(conn => conn.Id === parseInt(id, 10));
-    
-    if (index === -1) {
-      throw new Error('Connection not found');
+    try {
+      const apperClient = getApperClient();
+      const updateData = {
+        Id: parseInt(id, 10),
+        Name: connectionData.name,
+        type: connectionData.type,
+        host: connectionData.host,
+        port: connectionData.port,
+        database: connectionData.database,
+        username: connectionData.username,
+        is_active: connectionData.is_active !== undefined ? connectionData.is_active : false
+      };
+
+      // Only include password if provided
+      if (connectionData.password) {
+        updateData.password_hash = connectionData.password;
+      }
+
+      const params = {
+        records: [updateData]
+      };
+
+      const response = await apperClient.updateRecord('connection', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to update ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+          
+          throw new Error('Failed to update connection');
+        }
+        
+        const successfulRecord = response.results.find(result => result.success);
+        return successfulRecord ? successfulRecord.data : null;
+      }
+    } catch (error) {
+      console.error('Error updating connection:', error);
+      throw error;
     }
-
-    const updatedConnection = {
-      ...connections[index],
-      name: connectionData.name,
-      type: connectionData.type,
-      host: connectionData.host,
-      port: connectionData.port,
-      database: connectionData.database,
-      username: connectionData.username,
-      passwordHash: connectionData.password ? encryptPassword(connectionData.password) : connections[index].passwordHash,
-      updatedAt: new Date().toISOString()
-    };
-
-    connections[index] = updatedConnection;
-    saveConnections(connections);
-    return { ...updatedConnection };
   },
 
   async delete(id) {
-    await delay(200);
-    const connections = loadConnections();
-    const filteredConnections = connections.filter(conn => conn.Id !== parseInt(id, 10));
-    
-    if (filteredConnections.length === connections.length) {
-      throw new Error('Connection not found');
-    }
+    try {
+      const apperClient = getApperClient();
+      const params = {
+        RecordIds: [parseInt(id, 10)]
+      };
 
-    saveConnections(filteredConnections);
-    
-    // Clear active connection if deleted
-    const activeConnection = getActiveConnection();
-    if (activeConnection && activeConnection.Id === parseInt(id, 10)) {
-      localStorage.removeItem(ACTIVE_CONNECTION_KEY);
-    }
+      const response = await apperClient.deleteRecord('connection', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
 
-    return true;
+      if (response.results) {
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to delete ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+          
+          throw new Error('Failed to delete connection');
+        }
+      }
+
+      // Clear active connection if deleted
+      const activeConnection = getActiveConnection();
+      if (activeConnection && activeConnection.Id === parseInt(id, 10)) {
+        localStorage.removeItem(ACTIVE_CONNECTION_KEY);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting connection:', error);
+      throw error;
+    }
   },
 
   async testConnection(connectionData) {
-    await delay(1500); // Simulate connection test
+    // Simulate connection test
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Simulate connection test logic
     const isValid = connectionData.host && connectionData.database && connectionData.username;
     const isReachable = Math.random() > 0.2; // 80% success rate
     
@@ -165,67 +280,59 @@ const connectionService = {
   },
 
   async connect(connectionId) {
-    await delay(1000);
-    const connections = loadConnections();
-    const connection = connections.find(conn => conn.Id === parseInt(connectionId, 10));
-    
-    if (!connection) {
-      throw new Error('Connection not found');
+    try {
+      // Simulate connection process
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const connection = await this.getById(connectionId);
+      if (!connection) {
+        throw new Error('Connection not found');
+      }
+
+      // Simulate connection success/failure
+      const isSuccessful = Math.random() > 0.15; // 85% success rate
+      
+      if (!isSuccessful) {
+        throw new Error('Failed to establish database connection');
+      }
+
+      // Update connection status
+      const updatedConnection = await this.update(connectionId, {
+        ...connection,
+        is_active: true,
+        last_connected: new Date().toISOString()
+      });
+
+      setActiveConnection(updatedConnection);
+      return updatedConnection;
+    } catch (error) {
+      console.error('Error connecting:', error);
+      throw error;
     }
-
-    // Simulate connection process
-    const isSuccessful = Math.random() > 0.15; // 85% success rate
-    
-    if (!isSuccessful) {
-      throw new Error('Failed to establish database connection');
-    }
-
-    // Update connection status
-    const updatedConnection = {
-      ...connection,
-      isActive: true,
-      lastConnected: new Date().toISOString()
-    };
-
-    const index = connections.findIndex(conn => conn.Id === parseInt(connectionId, 10));
-    connections[index] = updatedConnection;
-    saveConnections(connections);
-    setActiveConnection(updatedConnection);
-
-    return { ...updatedConnection };
   },
 
   async disconnect() {
-    await delay(500);
-    const activeConnection = getActiveConnection();
-    
-    if (activeConnection) {
-      const connections = loadConnections();
-      const index = connections.findIndex(conn => conn.Id === activeConnection.Id);
+    try {
+      const activeConnection = getActiveConnection();
       
-      if (index !== -1) {
-        connections[index] = { ...connections[index], isActive: false };
-        saveConnections(connections);
+      if (activeConnection) {
+        await this.update(activeConnection.Id, {
+          ...activeConnection,
+          is_active: false
+        });
+        
+        localStorage.removeItem(ACTIVE_CONNECTION_KEY);
       }
-      
-      localStorage.removeItem(ACTIVE_CONNECTION_KEY);
-    }
 
-    return true;
+      return true;
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      throw error;
+    }
   },
 
   getActiveConnection() {
     return getActiveConnection();
-  },
-
-  // Utility method to get decrypted password (for connection testing)
-  getDecryptedPassword(connection) {
-    try {
-      return decryptPassword(connection.passwordHash);
-    } catch (error) {
-      console.error('Error decrypting password:', error);
-      return '';
-    }
   }
 };
 

@@ -143,9 +143,9 @@ const QueryEditor = ({ onQueryExecute }) => {
         <div className="flex items-center gap-3 mb-3 sm:mb-0">
           <ApperIcon name="Code" size={20} className="text-primary" />
           <h3 className="font-semibold text-white">SQL Query Editor</h3>
-          {activeConnection && (
+{activeConnection && (
             <Badge variant="success" size="sm">
-              {activeConnection.name}
+              {activeConnection.Name}
             </Badge>
           )}
         </div>

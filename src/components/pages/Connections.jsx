@@ -65,10 +65,10 @@ const Connections = () => {
     navigate('/query');
   };
 
-  const filteredConnections = connections.filter(connection =>
-    connection.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    connection.host.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    connection.database.toLowerCase().includes(searchTerm.toLowerCase())
+const filteredConnections = connections.filter(connection =>
+    connection.Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    connection.host?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    connection.database?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const containerVariants = {

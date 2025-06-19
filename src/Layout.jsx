@@ -1,10 +1,27 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ApperIcon from '@/components/ApperIcon';
+import Button from '@/components/atoms/Button';
 import { routeArray } from '@/config/routes';
 import ConnectionStatus from '@/components/organisms/ConnectionStatus';
+import { AuthContext } from '@/App';
 
+const LogoutButton = () => {
+  const { logout } = useContext(AuthContext);
+  
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      icon="LogOut"
+      onClick={logout}
+      className="text-slate-400 hover:text-white"
+    >
+      Logout
+    </Button>
+  );
+};
 const Layout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -45,10 +62,13 @@ const Layout = () => {
                 ))}
               </div>
             </nav>
-          </div>
+</div>
 
           <div className="flex items-center gap-4">
             <ConnectionStatus />
+            
+            {/* Logout Button */}
+            <LogoutButton />
             
             {/* Mobile Menu Button */}
             <button
